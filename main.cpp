@@ -96,7 +96,8 @@ int main()
     // Build and compile the shader program
     std::string vertexFilename = "../shaders/passThrough.vert";
     std::string fragmentFilename = "../shaders/passThrough.frag";
-    ShaderProgram passThroughShader(vertexFilename, "", "", "", fragmentFilename);
+    std::string geometryFilename = "../shaders/passThrough.gs";
+    ShaderProgram passThroughShader(vertexFilename, "", "", geometryFilename, fragmentFilename);
     passThroughShader();
 
     /****************** Models ********************/
