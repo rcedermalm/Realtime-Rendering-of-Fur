@@ -24,13 +24,13 @@ class MeshObject {
 
 public:
 
-    /* Constructor: initialize a triangleSoup object to all zeros */
+    /* Constructor: initialize a MeshObject to all zeros */
     MeshObject();
 
-    /* Destructor: clean up allocated data in a triangleSoup object */
+    /* Destructor: clean up allocated data in a MeshObject */
     ~MeshObject();
 
-    /* Clean up allocated data in a triangleSoup object */
+    /* Clean up allocated data in a MeshObject */
     void clean();
 
     /* Create a very simple demo mesh with a single triangle */
@@ -45,13 +45,13 @@ public:
     /* Load geometry from an OBJ file */
     void readOBJ(const char* filename);
 
-    /* Print data from a triangleSoup object, for debugging purposes */
+    /* Print data from a MeshObject, for debugging purposes */
     void print();
 
-    /* Print information about a triangleSoup object (stats and extents) */
+    /* Print information about a MeshObject (stats and extents) */
     void printInfo();
 
-    /* Render the geometry in a triangleSoup object */
+    /* Render the geometry in a MeshObject */
     void render();
 
 private:

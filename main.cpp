@@ -47,7 +47,7 @@ float lastFrame = 0.0f;
 // The MAIN function, from here we start the application and run the rendering loop
 int main()
 {
-    std::cout << "Starting GLFW context, OpenGL 3.3" << std::endl;
+    std::cout << "Starting GLFW context, OpenGL 4.0 or higher" << std::endl;
     // Init GLFW
     if(!glfwInit()) {
         std::cout << "Failed to initialise GLFW" << std::endl;
@@ -55,14 +55,14 @@ int main()
     }
 
     // Set all the required options for GLFW
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     // Create a GLFWwindow object that we can use for GLFW's functions
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "TYGla dig", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Real-time rendering of fur", NULL, NULL);
 
     if (window == nullptr){
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -97,17 +97,27 @@ int main()
     std::string vertexFilename = "../shaders/passThrough.vert";
     std::string fragmentFilename = "../shaders/passThrough.frag";
     std::string geometryFilename = "../shaders/passThrough.gs";
-    ShaderProgram passThroughShader(vertexFilename, "", "", geometryFilename, fragmentFilename);
+    std::string tessControlFilename = "../shaders/passThrough.tc";
+    std::string tessEvaluateFilename = "../shaders/passThrough.te";
+    ShaderProgram passThroughShader(vertexFilename, tessControlFilename, tessEvaluateFilename, geometryFilename, fragmentFilename);
     passThroughShader();
 
     /****************** Models ********************/
 
-    //MeshObject trex;
-    //trex.readOBJ("../objects/trex.obj");
+    // MeshObject box;
+    // box.createBox(2.0, 2.0, 2.0);
+
     MeshObject sphere;
     sphere.createSphere(2.0, 40);
 
+    // MeshObject bunny;
+    // bunny.readOBJ("../objects/bunny.obj");
+
+    // MeshObject trex;
+    // trex.readOBJ("../objects/trex.obj");
+
     Texture textureSphere = Texture("../textures/lightbrown.tga");
+    // Texture textureTrex = Texture("../textures/trex.tga");
 
     /**************** Uniform variables **********************/
     GLint viewLoc = glGetUniformLocation(passThroughShader, "view");
@@ -128,6 +138,7 @@ int main()
         // OpenGL settings
         glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
 
         // Create camera transformation
         glm::mat4 view = camera.GetViewMatrix();
@@ -137,12 +148,11 @@ int main()
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         /**************** RENDER STUFF ****************/
+
         glBindTexture( GL_TEXTURE_2D, textureSphere.textureID);
         sphere.render();
 
         // Swap front and back buffers
-        glEnable(GL_CULL_FACE);
-        glEnable(GL_DEPTH_TEST);
         glfwSwapBuffers(window);
 
         glfwPollEvents();

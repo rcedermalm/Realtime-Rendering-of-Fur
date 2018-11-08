@@ -656,12 +656,11 @@ void MeshObject::printInfo() {
 
 /* Render the geometry in a MeshObject object */
 void MeshObject::render() {
-
     glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, 3 * ntris, GL_UNSIGNED_INT, (void*)0);
+    glDrawElements(GL_PATCHES, 3 * ntris, GL_UNSIGNED_INT, (void*)0);
+    //glDrawElements(GL_TRIANGLES, 3 * ntris, GL_UNSIGNED_INT, (void*)0); // If tesselation shaders are not used
     // (mode, vertex count, type, element array buffer offset)
     glBindVertexArray(0);
-
 };
 
 /*
