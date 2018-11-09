@@ -148,13 +148,23 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH/(float)HEIGHT, 0.1f, 100.0f);
 
+        /**********************************************/
+        /**************** RENDER STUFF ****************/
+
+        /** First render the object as it is (without fur) **/
+
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        /**************** RENDER STUFF ****************/
-
         glBindTexture( GL_TEXTURE_2D, textureSphere.textureID);
         sphere.render(false);
+
+        /** Then add the hair to the object **/
+
+        // TODO: Add hair
+
+        /**********************************************/
+        /**********************************************/
 
         // Swap front and back buffers
         glfwSwapBuffers(window);
