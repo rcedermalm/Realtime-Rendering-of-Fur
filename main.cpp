@@ -94,13 +94,17 @@ int main()
 
     /***************** Shaders ********************/
     // Build and compile the shader program
-    std::string vertexFilename = "../shaders/passThrough.vert";
-    std::string fragmentFilename = "../shaders/passThrough.frag";
-    std::string geometryFilename = "../shaders/passThrough.gs";
-    std::string tessControlFilename = "../shaders/passThrough.tc";
-    std::string tessEvaluateFilename = "../shaders/passThrough.te";
-    ShaderProgram passThroughShader(vertexFilename, tessControlFilename, tessEvaluateFilename, geometryFilename, fragmentFilename);
-    passThroughShader();
+    std::string furVertexFilename = "../shaders/furShader.vert";
+    std::string furTessControlFilename = "../shaders/furShader.tc";
+    std::string furTessEvaluateFilename = "../shaders/furShader.te";
+    std::string furGeometryFilename = "../shaders/furShader.gs";
+    std::string furFragmentFilename = "../shaders/furShader.frag";
+    ShaderProgram hairShader(furVertexFilename, furTessControlFilename, furTessEvaluateFilename, furGeometryFilename, furFragmentFilename);
+
+    std::string plainVertexFilename = "../shaders/plainShader.vert";
+    std::string plainFragmentFilename = "../shaders/plainShader.frag";
+    ShaderProgram plainShader(plainVertexFilename, "", "", "", plainFragmentFilename);
+    plainShader();
 
     /****************** Models ********************/
 
@@ -120,8 +124,8 @@ int main()
     // Texture textureTrex = Texture("../textures/trex.tga");
 
     /**************** Uniform variables **********************/
-    GLint viewLoc = glGetUniformLocation(passThroughShader, "view");
-    GLint projLoc = glGetUniformLocation(passThroughShader, "projection");
+    GLint viewLoc = glGetUniformLocation(plainShader, "view");
+    GLint projLoc = glGetUniformLocation(plainShader, "projection");
 
     /****************************************************/
     /******************* RENDER LOOP ********************/
@@ -150,7 +154,7 @@ int main()
         /**************** RENDER STUFF ****************/
 
         glBindTexture( GL_TEXTURE_2D, textureSphere.textureID);
-        sphere.render();
+        sphere.render(false);
 
         // Swap front and back buffers
         glfwSwapBuffers(window);

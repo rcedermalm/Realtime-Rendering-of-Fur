@@ -52,7 +52,7 @@ public:
     void printInfo();
 
     /* Render the geometry in a MeshObject */
-    void render();
+    void render(bool tesselationShadersUsed);
 
 private:
     // All data members are private. They are accessed only by methods in the class.
