@@ -93,18 +93,22 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     /***************** Shaders ********************/
-    // Build and compile the shader program
+    // Build and compile the shader programs
+
+    // Plain shader for rendering the object as it is
+    std::string plainVertexFilename = "../shaders/plainShader.vert";
+    std::string plainFragmentFilename = "../shaders/plainShader.frag";
+    ShaderProgram plainShader(plainVertexFilename, "", "", "", plainFragmentFilename);
+    plainShader();
+
+    // Fur shader for rendering the hair strands on the object
     std::string furVertexFilename = "../shaders/furShader.vert";
     std::string furTessControlFilename = "../shaders/furShader.tc";
     std::string furTessEvaluateFilename = "../shaders/furShader.te";
     std::string furGeometryFilename = "../shaders/furShader.gs";
     std::string furFragmentFilename = "../shaders/furShader.frag";
-    ShaderProgram hairShader(furVertexFilename, furTessControlFilename, furTessEvaluateFilename, furGeometryFilename, furFragmentFilename);
-
-    std::string plainVertexFilename = "../shaders/plainShader.vert";
-    std::string plainFragmentFilename = "../shaders/plainShader.frag";
-    ShaderProgram plainShader(plainVertexFilename, "", "", "", plainFragmentFilename);
-    plainShader();
+    ShaderProgram furShader(furVertexFilename, furTessControlFilename, furTessEvaluateFilename, furGeometryFilename, furFragmentFilename);
+    furShader();
 
     /****************** Models ********************/
 
@@ -124,8 +128,11 @@ int main()
     // Texture textureTrex = Texture("../textures/trex.tga");
 
     /**************** Uniform variables **********************/
-    GLint viewLoc = glGetUniformLocation(plainShader, "view");
-    GLint projLoc = glGetUniformLocation(plainShader, "projection");
+    GLint viewLocPlain = glGetUniformLocation(plainShader, "view");
+    GLint projLocPlain = glGetUniformLocation(plainShader, "projection");
+
+    GLint viewLocFur = glGetUniformLocation(furShader, "view");
+    GLint projLocFur = glGetUniformLocation(furShader, "projection");
 
     /****************************************************/
     /******************* RENDER LOOP ********************/
@@ -148,23 +155,28 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH/(float)HEIGHT, 0.1f, 100.0f);
 
-        /**********************************************/
-        /**************** RENDER STUFF ****************/
+        /****************************************************/
+        /******************* RENDER STUFF *******************/
 
         /** First render the object as it is (without fur) **/
+        plainShader();
 
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
 
         glBindTexture( GL_TEXTURE_2D, textureSphere.textureID);
         sphere.render(false);
 
-        /** Then add the hair to the object **/
+        /******* Then add the hair/fur to the object ********/
+        furShader();
 
+        glUniformMatrix4fv(viewLocFur, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLocFur, 1, GL_FALSE, glm::value_ptr(projection));
+        
         // TODO: Add hair
 
-        /**********************************************/
-        /**********************************************/
+        /****************************************************/
+        /****************************************************/
 
         // Swap front and back buffers
         glfwSwapBuffers(window);
