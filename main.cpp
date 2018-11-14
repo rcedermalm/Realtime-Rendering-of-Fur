@@ -129,8 +129,8 @@ int main()
     MeshObject triangle;
     triangle.createTriangle();
 
-    // MeshObject box;
-    // box.createBox(2.0, 2.0, 2.0);
+    //MeshObject box;
+    //box.createBox(2.0, 2.0, 2.0);
 
     //MeshObject sphere;
     //sphere.createSphere(2.0, 40);
@@ -161,6 +161,11 @@ int main()
     glUniform1i(mainTextureLoc,0);
     glUniform1i(hairDataTextureLoc, 1);
 
+    GLint noOfHairSegmentLoc = glGetUniformLocation(furShader, "noOfHairSegments");
+    GLint noOfVerticesLoc = glGetUniformLocation(furShader, "noOfVertices");
+    glUniform1f(noOfHairSegmentLoc, (float)noofHairSegments);
+    glUniform1f(noOfVerticesLoc, (float)noOfMasterHairs);
+
     /****************************************************/
     /******************* RENDER LOOP ********************/
     /****************************************************/
@@ -185,6 +190,15 @@ int main()
         /****************************************************/
         /******************* RENDER STUFF *******************/
 
+        /***************** Render it plain ******************/
+        /*
+        plainShader();
+        glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
+        triangle.render(false);
+         */
+
+        /***************** Render with fur ******************/
         furShader();
 
         glUniformMatrix4fv(viewLocFur, 1, GL_FALSE, glm::value_ptr(view));
