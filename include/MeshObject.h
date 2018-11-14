@@ -51,6 +51,14 @@ public:
     /* Print information about a MeshObject (stats and extents) */
     void printInfo();
 
+    GLfloat* getVertexArray() const{
+        return vertexarray;
+    }
+
+    int getNoOfVertices() const{
+        return nverts;
+    }
+
     /* Render the geometry in a MeshObject */
     void render(bool tesselationShadersUsed);
 

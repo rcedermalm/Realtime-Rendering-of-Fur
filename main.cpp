@@ -27,6 +27,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
+GLuint createMasterHairs(const MeshObject& object);
+
 // Window dimensions
 const GLuint WIDTH = 1000, HEIGHT = 600;
 
@@ -39,6 +41,18 @@ bool firstMouse = true;
 // Time variables
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
+
+// Hair/fur variables
+int maxNoofTesselatorInstances = 64;
+int hairBladeInstancesPerUnitArea = 8;
+int noofHairSegments = 4;
+float hairSegmentLength = 5.0f;
+float hairWidthScale = 0.01f;
+float hairDisplacementScale = 5.0f;
+float hairRadius = 1;
+
+int noOfMasterHairs;
+
 
 /*******************************************
  **************    MAIN     ****************
@@ -112,11 +126,14 @@ int main()
 
     /****************** Models ********************/
 
+    MeshObject triangle;
+    triangle.createTriangle();
+
     // MeshObject box;
     // box.createBox(2.0, 2.0, 2.0);
 
-    MeshObject sphere;
-    sphere.createSphere(2.0, 40);
+    //MeshObject sphere;
+    //sphere.createSphere(2.0, 40);
 
     // MeshObject bunny;
     // bunny.readOBJ("../objects/bunny.obj");
@@ -124,8 +141,13 @@ int main()
     // MeshObject trex;
     // trex.readOBJ("../objects/trex.obj");
 
-    Texture textureSphere = Texture("../textures/lightbrown.tga");
+    Texture mainTexture = Texture("../textures/lightbrown.tga");
     // Texture textureTrex = Texture("../textures/trex.tga");
+
+    /****************** Hair/Fur ******************/
+
+    // TODO: Create master hairs using a compute shader instead. This makes it possible to also simulate the hairs.
+    GLuint hairDataTextureID = createMasterHairs(triangle);
 
     /**************** Uniform variables **********************/
     GLint viewLocPlain = glGetUniformLocation(plainShader, "view");
@@ -133,6 +155,11 @@ int main()
 
     GLint viewLocFur = glGetUniformLocation(furShader, "view");
     GLint projLocFur = glGetUniformLocation(furShader, "projection");
+
+    GLint mainTextureLoc = glGetUniformLocation(furShader, "mainTexture");
+    GLint hairDataTextureLoc = glGetUniformLocation(furShader, "hairDataTexture");
+    glUniform1i(mainTextureLoc,0);
+    glUniform1i(hairDataTextureLoc, 1);
 
     /****************************************************/
     /******************* RENDER LOOP ********************/
@@ -158,22 +185,20 @@ int main()
         /****************************************************/
         /******************* RENDER STUFF *******************/
 
-        /** First render the object as it is (without fur) **/
-        plainShader();
-
-        glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
-
-        glBindTexture( GL_TEXTURE_2D, textureSphere.textureID);
-        sphere.render(false);
-
-        /******* Then add the hair/fur to the object ********/
         furShader();
 
         glUniformMatrix4fv(viewLocFur, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLocFur, 1, GL_FALSE, glm::value_ptr(projection));
-        
-        // TODO: Add hair
+
+        // Main texture (for colour)
+        glActiveTexture(GL_TEXTURE0 + 0); // Texture unit 0
+        glBindTexture(GL_TEXTURE_2D, mainTexture.textureID);
+
+        // Hair data saved in texture
+        glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
+        glBindTexture(GL_TEXTURE_2D, hairDataTextureID);
+
+        triangle.render(true);
 
         /****************************************************/
         /****************************************************/
@@ -232,4 +257,47 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     camera.ProcessMouseScroll(yoffset);
+}
+
+GLuint createMasterHairs(const MeshObject& object){
+    GLfloat* vertexArray = object.getVertexArray();
+    noOfMasterHairs = object.getNoOfVertices();
+
+    GLfloat* hairData = new GLfloat[noOfMasterHairs * (noofHairSegments * 9)];
+
+    int masterHairIndex = 0;
+    int stride = 8; // 8 because the vertexArray consists of (vertex (3), normal (3), tex (2))
+    for(int i = 0; i < noOfMasterHairs*stride; i = i+stride){
+        glm::vec3 rootPos = glm::vec3(vertexArray[i], vertexArray[i+1], vertexArray[i+2]);
+        glm::vec3 rootNormal = glm::vec3(vertexArray[i+3], vertexArray[i+4], vertexArray[i+5]);
+
+        // Add hairVertices
+        for(int hairSegment = 1; hairSegment <= noofHairSegments; hairSegment++){
+            // Add position
+            glm::vec3 newPos = rootPos + hairSegment*hairSegmentLength*rootNormal;
+            hairData[masterHairIndex++] = newPos.x;
+            hairData[masterHairIndex++] = newPos.y;
+            hairData[masterHairIndex++] = newPos.z;
+
+            // Add normal TODO: CHANGE THIS TO CORRECT NORMAL
+            hairData[masterHairIndex++] = vertexArray[i+3];
+            hairData[masterHairIndex++] = vertexArray[i+4];
+            hairData[masterHairIndex++] = vertexArray[i+5];
+
+            // Add texture coordinates
+            hairData[masterHairIndex++] = vertexArray[i+6];
+            hairData[masterHairIndex++] = vertexArray[i+7];
+            hairData[masterHairIndex++] = 0.0f;
+        }
+    }
+
+    GLuint hairDataTextureID;
+    glGenTextures(1, &hairDataTextureID);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, hairDataTextureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, noofHairSegments * 3, noOfMasterHairs, 0, GL_RGB, GL_FLOAT, hairData);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    return hairDataTextureID;
 }
