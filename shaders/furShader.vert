@@ -1,26 +1,25 @@
 #version 430 core
 
-//const float noOfHairSegments = 4.0f;
-//const float noOfVertices = 3.0f;
-
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 TexCoord;
 
-uniform sampler2D hairDataTexture;
-uniform float noOfHairSegments;
-uniform float noOfVertices;
-
 out vec2 texCoord;
+out vec4 vNormal;
+out float vertexID;
 
+uniform mat4 view;
+uniform mat4 projection;
 
 void main()
 {
-    float offsetWidth = (1.0f / (noOfHairSegments * 3.0f) ) * 0.5f;
-    float offsetHeight = (1.0f / noOfVertices) * 0.5f;
-
-    vec2 firstHairStrandPos = vec2(offsetWidth, (gl_VertexID / noOfVertices) + offsetHeight);
-
-    gl_Position = vec4(vec3(texture(hairDataTexture, firstHairStrandPos)), 1.0f);
+    gl_Position = projection * view * vec4(position, 1.0);
     texCoord = TexCoord;
+
+    mat3 normalMatrix = mat3(transpose(inverse(view)));
+    vNormal = normalize(projection * vec4(normalMatrix * normal, 0.0));
+
+    vertexID = gl_VertexID;
+
+    //vNormal = projection * view * vec4(normal, 0.0); //normalize(projection * view * vec4(normal, 0.0));
 }

@@ -6,15 +6,27 @@ uniform mat4 view;
 uniform mat4 projection;
 
 in vec2 tcTexCoord[];
+in vec4 tcNormal[];
+in float tcVertexID[];
+
 out vec2 teTexCoord;
+out vec4 teNormal;
+
+out vec3 tessCoords;
+out vec3 teVertexIDs;
 
 void main(void)
 {
-    gl_Position = projection * view * (gl_TessCoord.x * gl_in[0].gl_Position +
+    gl_Position = (gl_TessCoord.x * gl_in[0].gl_Position +
                    gl_TessCoord.y * gl_in[1].gl_Position +
                    gl_TessCoord.z * gl_in[2].gl_Position);
 
     teTexCoord = (gl_TessCoord.x * tcTexCoord[0] +
                     gl_TessCoord.y * tcTexCoord[1] +
                     gl_TessCoord.z * tcTexCoord[2]);
+
+    teNormal = tcNormal[0];// Normal should be the same over the entire triangle
+    tessCoords = gl_TessCoord;
+    teVertexIDs = vec3(tcVertexID[0], tcVertexID[1], tcVertexID[2]);
+
 }

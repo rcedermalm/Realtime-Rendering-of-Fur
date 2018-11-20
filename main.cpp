@@ -191,12 +191,12 @@ int main()
         /******************* RENDER STUFF *******************/
 
         /***************** Render it plain ******************/
-        /*
+
         plainShader();
         glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
         triangle.render(false);
-         */
+
 
         /***************** Render with fur ******************/
         furShader();
