@@ -46,7 +46,7 @@ float lastFrame = 0.0f;
 int maxNoofTesselatorInstances = 64;
 int hairBladeInstancesPerUnitArea = 8;
 int noofHairSegments = 4;
-float hairSegmentLength = 5.0f;
+float hairSegmentLength = 0.05f;
 float hairWidthScale = 0.01f;
 float hairDisplacementScale = 5.0f;
 float hairRadius = 1;
@@ -290,7 +290,7 @@ GLuint createMasterHairs(const MeshObject& object){
             // Add position
             glm::vec3 newPos = rootPos + hairSegment*hairSegmentLength*rootNormal;
             hairData[masterHairIndex++] = newPos.x;
-            hairData[masterHairIndex++] = newPos.y;
+            hairData[masterHairIndex++] = newPos.y - pow(hairSegment, 2) * 0.01;
             hairData[masterHairIndex++] = newPos.z;
 
             // Add normal TODO: CHANGE THIS TO CORRECT NORMAL
