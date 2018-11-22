@@ -2,16 +2,17 @@
 
 layout (vertices = 3) out;
 
-in vec2 texCoord[];
-in vec4 vNormal[];
-in float vertexID[];
+in vec2 vTexCoord[];
+in vec3 vNormal[];
+in float vVertexID[];
 
 out vec2 tcTexCoord[];
-out vec4 tcNormal[];
+out vec3 tcNormal[];
 out float tcVertexID[];
 
 void main(void)
 {
+    // TODO: Determine tesselation level depending on the size of the triangle
     if(gl_InvocationID == 0)
     {
         gl_TessLevelInner[0] = 5.0;
@@ -19,9 +20,10 @@ void main(void)
         gl_TessLevelOuter[1] = 5.0;
         gl_TessLevelOuter[2] = 5.0;
     }
+
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
-    tcTexCoord[gl_InvocationID] = texCoord[gl_InvocationID];
+    tcTexCoord[gl_InvocationID] = vTexCoord[gl_InvocationID];
     tcNormal[gl_InvocationID] = vNormal[gl_InvocationID];
-    tcVertexID[gl_InvocationID] = vertexID[gl_InvocationID];
+    tcVertexID[gl_InvocationID] = vVertexID[gl_InvocationID];
 
 }

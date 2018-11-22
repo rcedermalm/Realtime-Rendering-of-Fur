@@ -38,6 +38,10 @@ float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
+// Light variables
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+
 // Time variables
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
@@ -126,17 +130,17 @@ int main()
 
     /****************** Models ********************/
 
-    MeshObject triangle;
-    triangle.createTriangle();
+    //MeshObject triangle;
+    //triangle.createTriangle();
 
     //MeshObject box;
     //box.createBox(2.0, 2.0, 2.0);
 
-    //MeshObject sphere;
-    //sphere.createSphere(2.0, 40);
+    MeshObject sphere;
+    sphere.createSphere(2.0, 40);
 
-    // MeshObject bunny;
-    // bunny.readOBJ("../objects/bunny.obj");
+    //MeshObject bunny;
+    //bunny.readOBJ("../objects/bunny.obj");
 
     // MeshObject trex;
     // trex.readOBJ("../objects/trex.obj");
@@ -147,7 +151,7 @@ int main()
     /****************** Hair/Fur ******************/
 
     // TODO: Create master hairs using a compute shader instead. This makes it possible to also simulate the hairs.
-    GLuint hairDataTextureID = createMasterHairs(triangle);
+    GLuint hairDataTextureID = createMasterHairs(sphere);
 
     /**************** Uniform variables **********************/
     GLint viewLocPlain = glGetUniformLocation(plainShader, "view");
@@ -163,8 +167,15 @@ int main()
 
     GLint noOfHairSegmentLoc = glGetUniformLocation(furShader, "noOfHairSegments");
     GLint noOfVerticesLoc = glGetUniformLocation(furShader, "noOfVertices");
-    glUniform1f(noOfHairSegmentLoc, (float)noofHairSegments);
-    glUniform1f(noOfVerticesLoc, (float)noOfMasterHairs);
+
+    GLint cameraPosLocFur = glGetUniformLocation(furShader, "cameraPosition");
+
+    GLint lightPosLocPlain = glGetUniformLocation(plainShader, "lightPos");
+    GLint lightPosLocFur = glGetUniformLocation(furShader, "lightPos");
+
+    GLint lightColorLocPlain = glGetUniformLocation(plainShader, "lightColor");
+    GLint lightColorLocFur = glGetUniformLocation(furShader, "lightColor");
+
 
     /****************************************************/
     /******************* RENDER LOOP ********************/
@@ -190,12 +201,7 @@ int main()
         /****************************************************/
         /******************* RENDER STUFF *******************/
 
-        /***************** Render it plain ******************/
 
-        plainShader();
-        glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
-        triangle.render(false);
 
 
         /***************** Render with fur ******************/
@@ -203,6 +209,13 @@ int main()
 
         glUniformMatrix4fv(viewLocFur, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLocFur, 1, GL_FALSE, glm::value_ptr(projection));
+
+        glUniform3f(lightPosLocFur, lightPos.x, lightPos.y, lightPos.z);
+        glUniform3f(lightColorLocFur, lightColor.x, lightColor.y, lightColor.z);
+        glUniform3f(cameraPosLocFur, camera.Position.x, camera.Position.y, camera.Position.z);
+
+        glUniform1f(noOfHairSegmentLoc, (float)noofHairSegments);
+        glUniform1f(noOfVerticesLoc, (float)noOfMasterHairs);
 
         // Main texture (for colour)
         glActiveTexture(GL_TEXTURE0 + 0); // Texture unit 0
@@ -212,7 +225,17 @@ int main()
         glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
         glBindTexture(GL_TEXTURE_2D, hairDataTextureID);
 
-        triangle.render(true);
+        sphere.render(true);
+
+        /***************** Render it plain ******************/
+
+        plainShader();
+        glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
+
+        glUniform3f(lightPosLocPlain, lightPos.x, lightPos.y, lightPos.z);
+        glUniform3f(lightColorLocPlain, lightColor.x, lightColor.y, lightColor.z);
+        sphere.render(false);
 
         /****************************************************/
         /****************************************************/
@@ -290,7 +313,7 @@ GLuint createMasterHairs(const MeshObject& object){
             // Add position
             glm::vec3 newPos = rootPos + hairSegment*hairSegmentLength*rootNormal;
             hairData[masterHairIndex++] = newPos.x;
-            hairData[masterHairIndex++] = newPos.y - pow(hairSegment, 2) * 0.01;
+            hairData[masterHairIndex++] = newPos.y; // - pow(hairSegment, 2) * 0.01;
             hairData[masterHairIndex++] = newPos.z;
 
             // Add normal TODO: CHANGE THIS TO CORRECT NORMAL

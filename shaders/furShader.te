@@ -2,18 +2,14 @@
 
 layout (triangles, equal_spacing, ccw) in;
 
-uniform mat4 view;
-uniform mat4 projection;
-
 in vec2 tcTexCoord[];
-in vec4 tcNormal[];
+in vec3 tcNormal[];
 in float tcVertexID[];
 
 out vec2 teTexCoord;
-out vec4 teNormal;
-
-out vec3 tessCoords;
+out vec3 teNormal;
 out vec3 teVertexIDs;
+out vec3 teTessCoords;
 
 void main(void)
 {
@@ -26,7 +22,6 @@ void main(void)
                     gl_TessCoord.z * tcTexCoord[2]);
 
     teNormal = tcNormal[0];// Normal should be the same over the entire triangle
-    tessCoords = gl_TessCoord;
+    teTessCoords = gl_TessCoord;
     teVertexIDs = vec3(tcVertexID[0], tcVertexID[1], tcVertexID[2]);
-
 }
