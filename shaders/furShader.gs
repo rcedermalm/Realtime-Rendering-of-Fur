@@ -1,7 +1,7 @@
 #version 150
 
 layout(triangles) in;
-layout(line_strip, max_vertices = 15) out; // Unfortunately this needs to be hardcoded.. Do not forget to change this
+layout(line_strip, max_vertices = 15) out; // Unfortunately this needs to be hardcoded.. (3*(noOfHairSegments+1))Do not forget to change this
                                            // if you change noOfHairSegments in main.cpp
 uniform mat4 view;
 uniform mat4 projection;
@@ -10,6 +10,7 @@ uniform mat4 projection;
 uniform sampler2D hairDataTexture;
 uniform float noOfHairSegments;
 uniform float noOfVertices;
+uniform float nrOfDataVariablesPerMasterHair;
 
 in vec2 teTexCoord[3];
 in vec3 teNormal[3];
@@ -20,7 +21,7 @@ out vec2 gTexCoord;
 out vec3 gPosition;
 out vec3 gTangent;
 
-float offsetWidth = (1.0f / (noOfHairSegments * 3.0f) ) * 0.5f;
+float offsetWidth = (1.0f / (noOfHairSegments * nrOfDataVariablesPerMasterHair) ) * 0.5f;
 float offsetHeight = (1.0f / noOfVertices) * 0.5f;
 
 // Function declarations

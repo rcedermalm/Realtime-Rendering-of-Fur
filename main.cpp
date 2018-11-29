@@ -51,6 +51,7 @@ int maxNoofTesselatorInstances = 64;
 int hairBladeInstancesPerUnitArea = 8;
 int noofHairSegments = 4;
 float hairSegmentLength = 0.05f;
+const int nrOfDataVariablesPerMasterHair = 1; // position
 float hairWidthScale = 0.01f;
 float hairDisplacementScale = 5.0f;
 float hairRadius = 1;
@@ -101,6 +102,9 @@ int main()
         return -1;
     }
 
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable( GL_BLEND );
     /************** Callback functions *************/
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -160,6 +164,7 @@ int main()
 
     GLint noOfHairSegmentLoc = glGetUniformLocation(furShader, "noOfHairSegments");
     GLint noOfVerticesLoc = glGetUniformLocation(furShader, "noOfVertices");
+    GLint nrOfDataVariablesPerMasterHairLoc = glGetUniformLocation(furShader, "nrOfDataVariablesPerMasterHair");
 
     GLint cameraPosLocFur = glGetUniformLocation(furShader, "cameraPosition");
 
@@ -220,6 +225,7 @@ int main()
 
         glUniform1f(noOfHairSegmentLoc, (float)noofHairSegments);
         glUniform1f(noOfVerticesLoc, (float)noOfMasterHairs);
+        glUniform1f(nrOfDataVariablesPerMasterHairLoc, (float)nrOfDataVariablesPerMasterHair);
 
         // Main texture (for colour)
         glActiveTexture(GL_TEXTURE0 + 0); // Texture unit 0
@@ -294,7 +300,8 @@ GLuint createMasterHairs(const MeshObject& object){
     GLfloat* vertexArray = object.getVertexArray();
     noOfMasterHairs = object.getNoOfVertices();
 
-    GLfloat* hairData = new GLfloat[noOfMasterHairs * (noofHairSegments * 9)];
+    int amountOfDataPerMasterHair = noofHairSegments * 3 * nrOfDataVariablesPerMasterHair;
+    GLfloat* hairData = new GLfloat[noOfMasterHairs * amountOfDataPerMasterHair];
 
     int masterHairIndex = 0;
     int stride = 8; // 8 because the vertexArray consists of (vertex (3), normal (3), tex (2))
@@ -307,18 +314,8 @@ GLuint createMasterHairs(const MeshObject& object){
             // Add position
             glm::vec3 newPos = rootPos + hairSegment*hairSegmentLength*rootNormal;
             hairData[masterHairIndex++] = newPos.x;
-            hairData[masterHairIndex++] = newPos.y; // - pow(hairSegment, 2) * 0.01;
+            hairData[masterHairIndex++] = newPos.y - pow(hairSegment, 2) * 0.01;
             hairData[masterHairIndex++] = newPos.z;
-
-            // Add normal TODO: CHANGE THIS TO CORRECT NORMAL
-            hairData[masterHairIndex++] = vertexArray[i+3];
-            hairData[masterHairIndex++] = vertexArray[i+4];
-            hairData[masterHairIndex++] = vertexArray[i+5];
-
-            // Add texture coordinates
-            hairData[masterHairIndex++] = vertexArray[i+6];
-            hairData[masterHairIndex++] = vertexArray[i+7];
-            hairData[masterHairIndex++] = 0.0f;
         }
     }
 
@@ -326,7 +323,7 @@ GLuint createMasterHairs(const MeshObject& object){
     glGenTextures(1, &hairDataTextureID);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, hairDataTextureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, noofHairSegments * 3, noOfMasterHairs, 0, GL_RGB, GL_FLOAT, hairData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, noofHairSegments * nrOfDataVariablesPerMasterHair, noOfMasterHairs, 0, GL_RGB, GL_FLOAT, hairData);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
