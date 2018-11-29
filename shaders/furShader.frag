@@ -14,6 +14,7 @@ out vec4 color;
 
 void main()
 {
+    // Lighting model follow Kajiya and Kay 89, perhaps try to add Marschner 03
     vec3 light = normalize(lightPos - gPosition);
     vec3 texColor = vec3(texture(mainTexture, gTexCoord));
     float diffuseAmount = length(cross(light, gTangent));
