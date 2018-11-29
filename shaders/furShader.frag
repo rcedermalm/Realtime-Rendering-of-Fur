@@ -16,7 +16,10 @@ void main()
 {
     vec3 light = normalize(lightPos - gPosition);
     vec3 texColor = vec3(texture(mainTexture, gTexCoord));
-    vec3 diffuse = texColor * length(cross(light, gTangent));
+    float diffuseAmount = length(cross(light, gTangent));
+    if(diffuseAmount < 0.7)
+        diffuseAmount = 0.7;
+    vec3 diffuse = texColor * diffuseAmount;
     vec3 eye = normalize(gPosition - cameraPosition);
     float p = 50;
     vec3 specular = texColor * 0.5 * clamp(pow((dot(gTangent, light) * dot(gTangent, eye) + length(cross(gTangent,light))*length(cross(gTangent,eye))), p), 0.0, 1.0);

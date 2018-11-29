@@ -139,14 +139,7 @@ int main()
     MeshObject sphere;
     sphere.createSphere(2.0, 40);
 
-    //MeshObject bunny;
-    //bunny.readOBJ("../objects/bunny.obj");
-
-    // MeshObject trex;
-    // trex.readOBJ("../objects/trex.obj");
-
     Texture mainTexture = Texture("../textures/lightbrown.tga");
-    // Texture textureTrex = Texture("../textures/trex.tga");
 
     /****************** Hair/Fur ******************/
 
@@ -201,8 +194,19 @@ int main()
         /****************************************************/
         /******************* RENDER STUFF *******************/
 
+        /***************** Render it plain ******************/
 
+        plainShader();
+        glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
 
+        glUniform3f(lightPosLocPlain, lightPos.x, lightPos.y, lightPos.z);
+        glUniform3f(lightColorLocPlain, lightColor.x, lightColor.y, lightColor.z);
+
+        glActiveTexture(GL_TEXTURE0 + 0); // Texture unit 0
+        glBindTexture(GL_TEXTURE_2D, mainTexture.textureID);
+
+        sphere.render(false);
 
         /***************** Render with fur ******************/
         furShader();
@@ -226,16 +230,6 @@ int main()
         glBindTexture(GL_TEXTURE_2D, hairDataTextureID);
 
         sphere.render(true);
-
-        /***************** Render it plain ******************/
-
-        plainShader();
-        glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
-
-        glUniform3f(lightPosLocPlain, lightPos.x, lightPos.y, lightPos.z);
-        glUniform3f(lightColorLocPlain, lightColor.x, lightColor.y, lightColor.z);
-        sphere.render(false);
 
         /****************************************************/
         /****************************************************/
