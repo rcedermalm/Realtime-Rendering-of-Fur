@@ -14,7 +14,9 @@ out vec4 color;
 
 void main()
 {
-    // Lighting model follow Kajiya and Kay 89, perhaps try to add Marschner 03
+    // Lighting model follow Kajiya and Kay 89,
+    // TODO: If time, try to add Marschner 03
+    // TODO: If time, add self-shadowing
     vec3 light = normalize(lightPos - gPosition);
     vec3 texColor = vec3(texture(mainTexture, gTexCoord));
     float diffuseAmount = length(cross(light, gTangent));
