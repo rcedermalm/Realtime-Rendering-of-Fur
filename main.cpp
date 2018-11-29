@@ -1,4 +1,5 @@
 #include <iostream>
+#include <random>
 
 // GLEW
 #define GLEW_STATIC
@@ -28,6 +29,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
 GLuint createMasterHairs(const MeshObject& object);
+GLuint createRandomness();
 
 // Window dimensions
 const GLuint WIDTH = 1000, HEIGHT = 600;
@@ -66,6 +68,8 @@ int noOfMasterHairs;
 // The MAIN function, from here we start the application and run the rendering loop
 int main()
 {
+    /****************** Window *******************/
+
     std::cout << "Starting GLFW context, OpenGL 4.0 or higher" << std::endl;
     // Init GLFW
     if(!glfwInit()) {
@@ -102,10 +106,11 @@ int main()
         return -1;
     }
 
-
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable( GL_BLEND );
+
     /************** Callback functions *************/
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     glfwSetCursorPosCallback(window, mouse_callback);
@@ -113,24 +118,6 @@ int main()
 
     // tell GLFW to capture our mouse
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    /***************** Shaders ********************/
-    // Build and compile the shader programs
-
-    // Plain shader for rendering the object as it is
-    std::string plainVertexFilename = "../shaders/plainShader.vert";
-    std::string plainFragmentFilename = "../shaders/plainShader.frag";
-    ShaderProgram plainShader(plainVertexFilename, "", "", "", plainFragmentFilename);
-    plainShader();
-
-    // Fur shader for rendering the hair strands on the object
-    std::string furVertexFilename = "../shaders/furShader.vert";
-    std::string furTessControlFilename = "../shaders/furShader.tc";
-    std::string furTessEvaluateFilename = "../shaders/furShader.te";
-    std::string furGeometryFilename = "../shaders/furShader.gs";
-    std::string furFragmentFilename = "../shaders/furShader.frag";
-    ShaderProgram furShader(furVertexFilename, furTessControlFilename, furTessEvaluateFilename, furGeometryFilename, furFragmentFilename);
-    furShader();
 
     /****************** Models ********************/
 
@@ -149,8 +136,29 @@ int main()
 
     // TODO: Create master hairs using a compute shader instead. This makes it possible to also simulate the hairs.
     GLuint hairDataTextureID = createMasterHairs(sphere);
+    GLuint randomDataTextureID = createRandomness();
+
+    /***************** Shaders ********************/
+
+    // Build and compile the shader programs
+
+    // Plain shader for rendering the object as it is
+    std::string plainVertexFilename = "../shaders/plainShader.vert";
+    std::string plainFragmentFilename = "../shaders/plainShader.frag";
+    ShaderProgram plainShader(plainVertexFilename, "", "", "", plainFragmentFilename);
+    plainShader();
+
+    // Fur shader for rendering the hair strands on the object
+    std::string furVertexFilename = "../shaders/furShader.vert";
+    std::string furTessControlFilename = "../shaders/furShader.tc";
+    std::string furTessEvaluateFilename = "../shaders/furShader.te";
+    std::string furGeometryFilename = "../shaders/furShader.gs";
+    std::string furFragmentFilename = "../shaders/furShader.frag";
+    ShaderProgram furShader(furVertexFilename, furTessControlFilename, furTessEvaluateFilename, furGeometryFilename, furFragmentFilename);
+    furShader();
 
     /**************** Uniform variables **********************/
+
     GLint viewLocPlain = glGetUniformLocation(plainShader, "view");
     GLint projLocPlain = glGetUniformLocation(plainShader, "projection");
 
@@ -159,8 +167,10 @@ int main()
 
     GLint mainTextureLoc = glGetUniformLocation(furShader, "mainTexture");
     GLint hairDataTextureLoc = glGetUniformLocation(furShader, "hairDataTexture");
+    GLint randomDataTextureLoc = glGetUniformLocation(furShader, "randomDataTexture");
     glUniform1i(mainTextureLoc,0);
     glUniform1i(hairDataTextureLoc, 1);
+    glUniform1i(randomDataTextureLoc, 2);
 
     GLint noOfHairSegmentLoc = glGetUniformLocation(furShader, "noOfHairSegments");
     GLint noOfVerticesLoc = glGetUniformLocation(furShader, "noOfVertices");
@@ -234,6 +244,10 @@ int main()
         // Hair data saved in texture
         glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
         glBindTexture(GL_TEXTURE_2D, hairDataTextureID);
+
+        // Random data saved in texture
+        glActiveTexture(GL_TEXTURE0 + 2); // Texture unit 2
+        glBindTexture(GL_TEXTURE_2D, randomDataTextureID);
 
         sphere.render(true);
 
@@ -328,4 +342,29 @@ GLuint createMasterHairs(const MeshObject& object){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     return hairDataTextureID;
+}
+
+GLuint createRandomness(){
+    GLfloat* randomData = new GLfloat[2048*2048*3];
+
+    std::random_device rd;
+    std::mt19937* gen = new std::mt19937(rd());
+    std::uniform_real_distribution<float>* dis = new std::uniform_real_distribution<float>(-1, 1);
+
+    for(int i = 0; i < 2048*2048*3; i++){
+        randomData[i] =  (*dis)(*gen) * 0.3f;
+    }
+
+    delete gen;
+    delete dis;
+
+    GLuint randomDataTextureID;
+    glGenTextures(1, &randomDataTextureID);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, randomDataTextureID);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 2048, 2048, 0, GL_RGB, GL_FLOAT, randomData);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    return randomDataTextureID;
 }

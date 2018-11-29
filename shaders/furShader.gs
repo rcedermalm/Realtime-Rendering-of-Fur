@@ -8,6 +8,7 @@ uniform mat4 projection;
 
 // Hair uniforms
 uniform sampler2D hairDataTexture;
+uniform sampler2D randomDataTexture;
 uniform float noOfHairSegments;
 uniform float noOfVertices;
 uniform float nrOfDataVariablesPerMasterHair;
@@ -50,6 +51,9 @@ void generateHairStrands(int index){
     // Create the hairvertices
     for(int hairIndex = 0; hairIndex < 4; hairIndex++){
         vec3 hairPos = getInterpolatedPosition(index, hairIndex);
+        // TODO: Randomness should only change the length of the hairstrand
+        vec3 randomness = vec3(texture(randomDataTexture, teTexCoord[index]));
+        hairPos = hairPos + randomness;
 
         gl_Position = projection * view * vec4(hairPos, 1.0);
         gTexCoord = teTexCoord[index];
@@ -71,6 +75,7 @@ vec3 getInterpolatedPosition(int index, int hairIndex){
     vec3 hairPos = teTessCoords[index].x * masterHairPos0 +
                       teTessCoords[index].y * masterHairPos1 +
                       teTessCoords[index].z * masterHairPos2;
+
     return hairPos;
 }
 
