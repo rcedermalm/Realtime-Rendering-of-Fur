@@ -288,8 +288,8 @@ int main()
         /****************************************************/
         /****************************************************/
 
-        glCopyImageSubData(hairDataTextureID_read, GL_TEXTURE_2D, 0, 0, 0, 0,
-                           hairDataTextureID_write, GL_TEXTURE_2D, 0, 0, 0, 0,
+        glCopyImageSubData(hairDataTextureID_write, GL_TEXTURE_2D, 0, 0, 0, 0,
+                           hairDataTextureID_read, GL_TEXTURE_2D, 0, 0, 0, 0,
                            noofHairSegments, noOfMasterHairs, 1);
 
         // Swap front and back buffers
