@@ -216,7 +216,7 @@ int main()
         furSimulationShader();
         glBindImageTexture(0, hairDataTextureID_write, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
         glBindImageTexture(1, hairDataTextureID_read, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-        glDispatchCompute((GLuint)noofHairSegments, (GLuint)noOfMasterHairs, 1);
+        glDispatchCompute(1, (GLuint)noOfMasterHairs, 1);
 
         /****************************************************/
         /************* SETTINGS AND TRANSFORMS **************/
