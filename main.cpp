@@ -50,7 +50,7 @@ float lastFrame = 0.0f;
 
 // Hair/fur variables
 int maxNoofTesselatorInstances = 64;
-int hairBladeInstancesPerUnitArea = 8;
+int hairInstancesPerUnitArea = 8;
 int noofHairSegments = 4;
 float hairSegmentLength = 0.05f;
 const int nrOfDataVariablesPerMasterHair = 1; // position
@@ -124,11 +124,14 @@ int main()
     //MeshObject triangle;
     //triangle.createTriangle();
 
-    //MeshObject box;
-    //box.createBox(2.0, 2.0, 2.0);
+    MeshObject box;
+    box.createBox(2.0, 2.0, 2.0);
 
     MeshObject sphere;
     sphere.createSphere(2.0, 40);
+
+    MeshObject bunny;
+    bunny.readOBJ("../objects/bunny1752.obj");
 
     Texture mainTexture = Texture("../textures/lightbrown.tga");
 

@@ -2,6 +2,8 @@
 
 layout (vertices = 3) out;
 
+uniform vec3 cameraPosition;
+
 in vec2 vTexCoord[];
 in vec3 vNormal[];
 in float vVertexID[];
@@ -12,18 +14,35 @@ out float tcVertexID[];
 
 void main(void)
 {
-    // TODO: Determine tesselation level depending on the size of the triangle
-    if(gl_InvocationID == 0)
-    {
-        gl_TessLevelInner[0] = 10.0;
-        gl_TessLevelOuter[0] = 10.0;
-        gl_TessLevelOuter[1] = 10.0;
-        gl_TessLevelOuter[2] = 10.0;
-    }
+    /*********************************/
+    /*** Decide tesselation levels ***/
+
+    vec3 ac = vec3(gl_in[1].gl_Position - gl_in[0].gl_Position);
+    vec3 bc = vec3(gl_in[2].gl_Position - gl_in[0].gl_Position);
+    vec3 triangleNormal = cross(ac, bc);
+
+    vec3 eye = gl_in[gl_InvocationID].gl_Position.xyz - cameraPosition;
+    float distance = length(eye);
+    eye = normalize(eye);
+
+    float area = 0.5f * length(triangleNormal);
+    float numberOfTesselations = area*350.f; // 350.f gave good result for the test objects used
+
+    if(dot(normalize(triangleNormal), eye) > 0.2) // if the face is facing the other way, we do not need any fur
+        numberOfTesselations = 1.f;
+    else if(distance > 20.f) // if the object is far away we do not need so much fur
+        numberOfTesselations = numberOfTesselations/(distance/10.f);
+
+    gl_TessLevelInner[0] = numberOfTesselations;
+    gl_TessLevelOuter[0] = numberOfTesselations;
+    gl_TessLevelOuter[1] = numberOfTesselations;
+    gl_TessLevelOuter[2] = numberOfTesselations;
+
+    /******************************/
+    /*** Pass through variables ***/
 
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
     tcTexCoord[gl_InvocationID] = vTexCoord[gl_InvocationID];
     tcNormal[gl_InvocationID] = vNormal[gl_InvocationID];
     tcVertexID[gl_InvocationID] = vVertexID[gl_InvocationID];
-
 }
