@@ -48,11 +48,11 @@ void generateHairStrands(int index){
     gTangent = normalize(firstHairSegmentPos - lastPos);
     EmitVertex();
 
+    vec3 randomness = vec3(texture(randomDataTexture, teTexCoord[index]));
+
     // Create the hairvertices
-    for(int hairIndex = 0; hairIndex < 4; hairIndex++){
+    for(int hairIndex = 0; hairIndex < noOfHairSegments; hairIndex++){
         vec3 hairPos = getInterpolatedPosition(index, hairIndex);
-        // TODO: Randomness should only change the length of the hairstrand
-        vec3 randomness = vec3(texture(randomDataTexture, teTexCoord[index]));
         hairPos = hairPos + randomness;
 
         gl_Position = projection * view * vec4(hairPos, 1.0);
