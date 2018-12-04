@@ -65,7 +65,7 @@ int main()
 {
     /****************** Window *******************/
 
-    std::cout << "Starting GLFW context, OpenGL 4.0 or higher" << std::endl;
+    std::cout << "Starting GLFW context, OpenGL 4.3 or higher" << std::endl;
     // Init GLFW
     if(!glfwInit()) {
         std::cout << "Failed to initialise GLFW" << std::endl;
@@ -74,7 +74,7 @@ int main()
 
     // Set all the required options for GLFW
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -135,9 +135,14 @@ int main()
 
     /****************** Hair/Fur ******************/
 
-    // TODO: Create master hairs using a compute shader instead. This makes it possible to also simulate the hairs.
+    // Creation of the master hairs
     GLfloat* hairData = createMasterHairs(sphere);
-    GLuint hairDataTextureID = generateTextureFromHairData(hairData);
+
+    // Generation of textures for hair data
+    GLuint hairDataTextureID_read = generateTextureFromHairData(hairData);
+    GLuint hairDataTextureID_write = generateTextureFromHairData(NULL);
+
+    // To be able to add randomness to each hair strand
     GLuint randomDataTextureID = createRandomness();
 
     /***************** Shaders ********************/
@@ -159,11 +164,26 @@ int main()
     ShaderProgram furShader(furVertexFilename, furTessControlFilename, furTessEvaluateFilename, furGeometryFilename, furFragmentFilename);
     furShader();
 
+    // Fur simulation shader (compute shader)
+    std::string furSimulationComputeFilename = "../shaders/furSimulation.compute";
+    ComputeShader furSimulationShader(furSimulationComputeFilename);
+    furSimulationShader();
+
     /**************** Uniform variables **********************/
 
+    /** Plain shader **/
+    plainShader();
     GLint viewLocPlain = glGetUniformLocation(plainShader, "view");
     GLint projLocPlain = glGetUniformLocation(plainShader, "projection");
 
+    GLint lightPosLocPlain = glGetUniformLocation(plainShader, "lightPos");
+    GLint lightColorLocPlain = glGetUniformLocation(plainShader, "lightColor");
+
+    GLint mainTextureLocPlain = glGetUniformLocation(furShader, "mainTexture");
+    glUniform1i(mainTextureLocPlain, 0);
+
+    /** Fur shader **/
+    furShader();
     GLint viewLocFur = glGetUniformLocation(furShader, "view");
     GLint projLocFur = glGetUniformLocation(furShader, "projection");
 
@@ -180,10 +200,7 @@ int main()
 
     GLint cameraPosLocFur = glGetUniformLocation(furShader, "cameraPosition");
 
-    GLint lightPosLocPlain = glGetUniformLocation(plainShader, "lightPos");
     GLint lightPosLocFur = glGetUniformLocation(furShader, "lightPos");
-
-    GLint lightColorLocPlain = glGetUniformLocation(plainShader, "lightColor");
     GLint lightColorLocFur = glGetUniformLocation(furShader, "lightColor");
 
 
@@ -193,6 +210,17 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
+        /****************************************************/
+        /**************** SIMULATION OF FUR *****************/
+
+        furSimulationShader();
+        glBindImageTexture(0, hairDataTextureID_write, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+        glBindImageTexture(1, hairDataTextureID_read, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glDispatchCompute((GLuint)noofHairSegments, (GLuint)noOfMasterHairs, 1);
+
+        /****************************************************/
+        /************* SETTINGS AND TRANSFORMS **************/
+
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
@@ -226,6 +254,10 @@ int main()
         sphere.render(false);
 
         /***************** Render with fur ******************/
+        // Wait until simulation is finished
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        // Render
         furShader();
 
         glUniformMatrix4fv(viewLocFur, 1, GL_FALSE, glm::value_ptr(view));
@@ -245,7 +277,7 @@ int main()
 
         // Hair data saved in texture
         glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
-        glBindTexture(GL_TEXTURE_2D, hairDataTextureID);
+        glBindTexture(GL_TEXTURE_2D, hairDataTextureID_write);
 
         // Random data saved in texture
         glActiveTexture(GL_TEXTURE0 + 2); // Texture unit 2
@@ -255,6 +287,10 @@ int main()
 
         /****************************************************/
         /****************************************************/
+
+        glCopyImageSubData(hairDataTextureID_read, GL_TEXTURE_2D, 0, 0, 0, 0,
+                           hairDataTextureID_write, GL_TEXTURE_2D, 0, 0, 0, 0,
+                           noofHairSegments, noOfMasterHairs, 1);
 
         // Swap front and back buffers
         glfwSwapBuffers(window);
@@ -316,7 +352,7 @@ GLfloat* createMasterHairs(const MeshObject& object){
     GLfloat* vertexArray = object.getVertexArray();
     noOfMasterHairs = object.getNoOfVertices();
 
-    int amountOfDataPerMasterHair = noofHairSegments * 3 * nrOfDataVariablesPerMasterHair;
+    int amountOfDataPerMasterHair = noofHairSegments * 4 * nrOfDataVariablesPerMasterHair;
     GLfloat* hairData = new GLfloat[noOfMasterHairs * amountOfDataPerMasterHair];
 
     int masterHairIndex = 0;
@@ -332,6 +368,7 @@ GLfloat* createMasterHairs(const MeshObject& object){
             hairData[masterHairIndex++] = newPos.x;
             hairData[masterHairIndex++] = newPos.y - pow(hairSegment, 2) * 0.01;
             hairData[masterHairIndex++] = newPos.z;
+            hairData[masterHairIndex++] = 1.0f;
         }
     }
     return hairData;
@@ -342,7 +379,7 @@ GLuint generateTextureFromHairData(GLfloat* hairData){
     glGenTextures(1, &hairDataTextureID);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, hairDataTextureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, noofHairSegments * nrOfDataVariablesPerMasterHair, noOfMasterHairs, 0, GL_RGB, GL_FLOAT, hairData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, noofHairSegments * nrOfDataVariablesPerMasterHair, noOfMasterHairs, 0, GL_RGBA, GL_FLOAT, hairData);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     return hairDataTextureID;
