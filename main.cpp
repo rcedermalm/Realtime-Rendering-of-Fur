@@ -28,7 +28,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
-GLuint createMasterHairs(const MeshObject& object);
+GLfloat* createMasterHairs(const MeshObject& object);
+GLuint generateTextureFromHairData(GLfloat* hairData);
 GLuint createRandomness();
 
 // Window dimensions
@@ -49,15 +50,9 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 // Hair/fur variables
-int maxNoofTesselatorInstances = 64;
-int hairInstancesPerUnitArea = 8;
 int noofHairSegments = 4;
 float hairSegmentLength = 0.05f;
 const int nrOfDataVariablesPerMasterHair = 1; // position
-float hairWidthScale = 0.01f;
-float hairDisplacementScale = 5.0f;
-float hairRadius = 1;
-
 int noOfMasterHairs;
 
 
@@ -141,7 +136,8 @@ int main()
     /****************** Hair/Fur ******************/
 
     // TODO: Create master hairs using a compute shader instead. This makes it possible to also simulate the hairs.
-    GLuint hairDataTextureID = createMasterHairs(sphere);
+    GLfloat* hairData = createMasterHairs(sphere);
+    GLuint hairDataTextureID = generateTextureFromHairData(hairData);
     GLuint randomDataTextureID = createRandomness();
 
     /***************** Shaders ********************/
@@ -316,7 +312,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     camera.ProcessMouseScroll(yoffset);
 }
 
-GLuint createMasterHairs(const MeshObject& object){
+GLfloat* createMasterHairs(const MeshObject& object){
     GLfloat* vertexArray = object.getVertexArray();
     noOfMasterHairs = object.getNoOfVertices();
 
@@ -338,7 +334,10 @@ GLuint createMasterHairs(const MeshObject& object){
             hairData[masterHairIndex++] = newPos.z;
         }
     }
+    return hairData;
+}
 
+GLuint generateTextureFromHairData(GLfloat* hairData){
     GLuint hairDataTextureID;
     glGenTextures(1, &hairDataTextureID);
     glActiveTexture(GL_TEXTURE0);
@@ -346,7 +345,6 @@ GLuint createMasterHairs(const MeshObject& object){
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, noofHairSegments * nrOfDataVariablesPerMasterHair, noOfMasterHairs, 0, GL_RGB, GL_FLOAT, hairData);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
     return hairDataTextureID;
 }
 
@@ -374,3 +372,4 @@ GLuint createRandomness(){
 
     return randomDataTextureID;
 }
+
