@@ -373,7 +373,7 @@ GLfloat* createMasterHairs(const MeshObject& object){
             // Add position
             glm::vec3 newPos = rootPos + hairSegment*hairSegmentLength*rootNormal;
             hairData[masterHairIndex++] = newPos.x;
-            hairData[masterHairIndex++] = newPos.y - pow(hairSegment, 2) * 0.01;
+            hairData[masterHairIndex++] = newPos.y;
             hairData[masterHairIndex++] = newPos.z;
             hairData[masterHairIndex++] = 1.0f;
         }
