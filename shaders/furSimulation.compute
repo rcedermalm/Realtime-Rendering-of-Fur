@@ -4,23 +4,24 @@ layout(local_size_x = 1, local_size_y = 1) in;
 layout(rgba16f, binding = 0) uniform writeonly image2D img_output;
 layout(rgba16f, binding = 1) uniform readonly image2D img_input;
 
+// Do not forget to change this if it is changed in main.
+// Casting a uniform to const did not seem to work..
+const int noOfHairSegments = 4;
+
 void main() {
-    // Get index in global work group i.e x,y position
-    float offset = 1.0;
-    ivec2 tex_coords1 = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 tex_coords2 = tex_coords1 + ivec2(offset, 0.0);
-    ivec2 tex_coords3 = tex_coords2 + ivec2(offset, 0.0);
-    ivec2 tex_coords4 = tex_coords3 + ivec2(offset, 0.0);
+    ivec2 texCoords[noOfHairSegments];
+    vec4 positions[noOfHairSegments];
 
-    // Get positions from input texture
-    vec4 pos1 = imageLoad(img_input, tex_coords1);
-    vec4 pos2 = imageLoad(img_input, tex_coords2);
-    vec4 pos3 = imageLoad(img_input, tex_coords3);
-    vec4 pos4 = imageLoad(img_input, tex_coords4);
+    // Get positions from the input texture
+    for(int i = 0; i < noOfHairSegments; i++){
+        texCoords[i] = ivec2(gl_GlobalInvocationID.xy) + ivec2(i, 0);
+        positions[i] = imageLoad(img_input, texCoords[i]);
+    }
 
-    // Set the new position in the correct texel in the output texture
-    imageStore(img_output, tex_coords1, pos1);
-    imageStore(img_output, tex_coords2, pos2);
-    imageStore(img_output, tex_coords3, pos3);
-    imageStore(img_output, tex_coords4, pos4);
+    // TODO: Add simulation here
+
+    // Finally, set the new position in the correct texel in the output texture
+    for(int i = 0; i < noOfHairSegments; i++){
+        imageStore(img_output, texCoords[i], positions[i]);
+    }
 }
