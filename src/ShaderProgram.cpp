@@ -66,6 +66,7 @@ const std::string BaseShaderProgram::getShaderType(GLuint type) {
             break;
         case GL_COMPUTE_SHADER:
             name = "Compute Shader";
+            break;
         default:
             name = "Unknown Shader type";
             break;
