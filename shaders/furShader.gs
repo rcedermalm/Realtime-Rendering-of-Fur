@@ -53,7 +53,7 @@ void generateHairStrands(int index){
     // Create the hairvertices
     for(int hairIndex = 0; hairIndex < noOfHairSegments; hairIndex++){
         vec3 hairPos = getInterpolatedPosition(index, hairIndex);
-        hairPos = hairPos + randomness;
+        hairPos = hairPos + 0.2f * randomness;
 
         gl_Position = projection * view * vec4(hairPos, 1.0);
         gTexCoord = teTexCoord[index];

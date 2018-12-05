@@ -9,6 +9,10 @@ layout(rgba16f, binding = 2) uniform writeonly image2D img_simulated_pos; // Pos
 // Casting a uniform to const did not seem to work..
 const int noOfHairSegments = 4;
 
+float hairSegmentLength = 0.05f;
+
+void fullfillEdgeConstraint(inout vec4 p1, inout vec4 p2, int index);
+
 void main() {
 
     /***************************************************/
@@ -27,7 +31,7 @@ void main() {
         last_pos[i] = imageLoad(img_last_pos, texCoords[i]);
         curr_pos[i] = imageLoad(img_current_pos, texCoords[i]);
 
-        new_pos[i] = vec4(0.f);
+        new_pos[i] = curr_pos[i];
         curr_vel[i] = curr_pos[i] - last_pos[i];
     }
 
@@ -39,7 +43,7 @@ void main() {
 
     /******************* Integration *******************/
     vec4 gravity = vec4(0.f, -9.82, 0.f, 0.f);
-    for(int i = 0; i < noOfHairSegments; i++){
+    for(int i = 1; i < noOfHairSegments; i++){
         new_pos[i] = curr_pos[i] + curr_vel[i] + gravity * pow(dt, 2);
     }
 
@@ -50,9 +54,14 @@ void main() {
     // TODO: Add local constraints
 
     /************ Edge/Length constraints **************/
-    // TODO: Add edge/length constraints
-
-
+    int maxIter = 5;
+    int iter = 0;
+    while(iter < maxIter){
+        for(int i = 0; i < noOfHairSegments-1; i++){
+            fullfillEdgeConstraint(new_pos[i], new_pos[i+1], i);
+        }
+        iter++;
+    }
     /***************************************************/
     /***************************************************/
 
@@ -60,4 +69,20 @@ void main() {
     for(int i = 0; i < noOfHairSegments; i++){
         imageStore(img_simulated_pos, texCoords[i], new_pos[i]);
     }
+}
+
+void fullfillEdgeConstraint(inout vec4 p1, inout vec4 p2, int index){
+    vec4 n = normalize(p1 - p2);
+    float deltaD = length(p1 - p2) - hairSegmentLength;
+    vec4 dP1, dP2;
+    if(index == 0){
+        dP1 = vec4(0.f);
+        dP2 = deltaD * n;
+    } else {
+        dP1 = -0.5 * deltaD * n;
+        dP2 =  0.5 * deltaD * n;
+    }
+
+    p1 = p1 + dP1;
+    p2 = p2 + dP2;
 }
