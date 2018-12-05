@@ -139,8 +139,9 @@ int main()
     GLfloat* hairData = createMasterHairs(sphere);
 
     // Generation of textures for hair data
-    GLuint hairDataTextureID_read = generateTextureFromHairData(hairData);
-    GLuint hairDataTextureID_write = generateTextureFromHairData(NULL);
+    GLuint hairDataTextureID_last = generateTextureFromHairData(hairData);
+    GLuint hairDataTextureID_current = generateTextureFromHairData(hairData);
+    GLuint hairDataTextureID_simulated = generateTextureFromHairData(NULL);
 
     // To be able to add randomness to each hair strand
     GLuint randomDataTextureID = createRandomness();
@@ -214,9 +215,11 @@ int main()
         /**************** SIMULATION OF FUR *****************/
 
         furSimulationShader();
-        glBindImageTexture(0, hairDataTextureID_write, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
-        glBindImageTexture(1, hairDataTextureID_read, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glBindImageTexture(0, hairDataTextureID_last, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glBindImageTexture(1, hairDataTextureID_current, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glBindImageTexture(2, hairDataTextureID_simulated, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
         glDispatchCompute(1, (GLuint)noOfMasterHairs, 1);
+
 
         /****************************************************/
         /************* SETTINGS AND TRANSFORMS **************/
@@ -277,7 +280,7 @@ int main()
 
         // Hair data saved in texture
         glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
-        glBindTexture(GL_TEXTURE_2D, hairDataTextureID_write);
+        glBindTexture(GL_TEXTURE_2D, hairDataTextureID_simulated);
 
         // Random data saved in texture
         glActiveTexture(GL_TEXTURE0 + 2); // Texture unit 2
@@ -288,8 +291,12 @@ int main()
         /****************************************************/
         /****************************************************/
 
-        glCopyImageSubData(hairDataTextureID_write, GL_TEXTURE_2D, 0, 0, 0, 0,
-                           hairDataTextureID_read, GL_TEXTURE_2D, 0, 0, 0, 0,
+        glCopyImageSubData(hairDataTextureID_current, GL_TEXTURE_2D, 0, 0, 0, 0,
+                           hairDataTextureID_last, GL_TEXTURE_2D, 0, 0, 0, 0,
+                           noofHairSegments, noOfMasterHairs, 1);
+
+        glCopyImageSubData(hairDataTextureID_simulated, GL_TEXTURE_2D, 0, 0, 0, 0,
+                           hairDataTextureID_current, GL_TEXTURE_2D, 0, 0, 0, 0,
                            noofHairSegments, noOfMasterHairs, 1);
 
         // Swap front and back buffers
