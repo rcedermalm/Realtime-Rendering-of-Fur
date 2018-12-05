@@ -1,13 +1,14 @@
 #version 430
 
 layout(local_size_x = 1, local_size_y = 1) in;
-layout(rgba16f, binding = 0) uniform readonly image2D img_last_pos; // Position in the last frame
-layout(rgba16f, binding = 1) uniform readonly image2D img_current_pos; // Position in the current frame
-layout(rgba16f, binding = 2) uniform writeonly image2D img_simulated_pos; // Position in the new frame (simulated)
+layout(rgba16f, binding = 0) uniform readonly image2D img_rest_pos;
+layout(rgba16f, binding = 1) uniform readonly image2D img_last_pos; // Position in the last frame
+layout(rgba16f, binding = 2) uniform readonly image2D img_current_pos; // Position in the current frame
+layout(rgba16f, binding = 3) uniform writeonly image2D img_simulated_pos; // Position in the new frame (simulated)
 
 // Do not forget to change this if it is changed in main.
 // Casting a uniform to const did not seem to work..
-const int noOfHairSegments = 4;
+const int noOfHairSegments = 8;
 
 float hairSegmentLength = 0.05f;
 
@@ -20,6 +21,7 @@ void main() {
     /***************************************************/
 
     ivec2 texCoords[noOfHairSegments];
+    vec4 rest_pos[noOfHairSegments];
     vec4 last_pos[noOfHairSegments];
     vec4 curr_pos[noOfHairSegments];
     vec4 new_pos[noOfHairSegments];
@@ -28,6 +30,7 @@ void main() {
     // Initialize positions and velocities for each hair vertex.
     for(int i = 0; i < noOfHairSegments; i++){
         texCoords[i] = ivec2(gl_GlobalInvocationID.xy) + ivec2(i, 0);
+        rest_pos[i] = imageLoad(img_rest_pos, texCoords[i]);
         last_pos[i] = imageLoad(img_last_pos, texCoords[i]);
         curr_pos[i] = imageLoad(img_current_pos, texCoords[i]);
 
@@ -39,7 +42,7 @@ void main() {
     /*************** Simulation step *******************/
     /***************************************************/
 
-    float dt = 0.01;
+    float dt = 0.03;
 
     /******************* Integration *******************/
     vec4 gravity = vec4(0.f, -9.82, 0.f, 0.f);
@@ -48,13 +51,17 @@ void main() {
     }
 
     /*************** Global constraints ****************/
-    // TODO: Add global constraints
-
+    float max_c_strength = 0.1f;
+    float constraint_strength = max_c_strength;
+    for(int i = 0; i < noOfHairSegments; i++){
+        new_pos[i] = new_pos[i] + constraint_strength * (rest_pos[i] - new_pos[i]);
+        constraint_strength = constraint_strength - (max_c_strength/noOfHairSegments);
+    }
     /*************** Local constraints *****************/
     // TODO: Add local constraints
 
     /************ Edge/Length constraints **************/
-    int maxIter = 5;
+    int maxIter = 2;
     int iter = 0;
     while(iter < maxIter){
         for(int i = 0; i < noOfHairSegments-1; i++){

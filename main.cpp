@@ -50,7 +50,7 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 // Hair/fur variables
-int noofHairSegments = 4;
+int noofHairSegments = 8;
 float hairSegmentLength = 0.05f;
 const int nrOfDataVariablesPerMasterHair = 1; // position
 int noOfMasterHairs;
@@ -139,6 +139,7 @@ int main()
     GLfloat* hairData = createMasterHairs(sphere);
 
     // Generation of textures for hair data
+    GLuint hairDataTextureID_rest = generateTextureFromHairData(hairData);
     GLuint hairDataTextureID_last = generateTextureFromHairData(hairData);
     GLuint hairDataTextureID_current = generateTextureFromHairData(hairData);
     GLuint hairDataTextureID_simulated = generateTextureFromHairData(NULL);
@@ -215,9 +216,10 @@ int main()
         /**************** SIMULATION OF FUR *****************/
 
         furSimulationShader();
-        glBindImageTexture(0, hairDataTextureID_last, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-        glBindImageTexture(1, hairDataTextureID_current, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-        glBindImageTexture(2, hairDataTextureID_simulated, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+        glBindImageTexture(0, hairDataTextureID_rest, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glBindImageTexture(1, hairDataTextureID_last, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glBindImageTexture(2, hairDataTextureID_current, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glBindImageTexture(3, hairDataTextureID_simulated, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
         glDispatchCompute(1, (GLuint)noOfMasterHairs, 1);
 
 

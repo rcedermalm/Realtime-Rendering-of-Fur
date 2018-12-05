@@ -1,7 +1,7 @@
 #version 150
 
 layout(triangles) in;
-layout(line_strip, max_vertices = 15) out; // Unfortunately this needs to be hardcoded.. (3*(noOfHairSegments+1))Do not forget to change this
+layout(line_strip, max_vertices = 27) out; // Unfortunately this needs to be hardcoded.. (3*(noOfHairSegments+1))Do not forget to change this
                                            // if you change noOfHairSegments in main.cpp
 uniform mat4 view;
 uniform mat4 projection;
