@@ -6,13 +6,15 @@ layout(rgba16f, binding = 1) uniform readonly image2D img_last_pos; // Position 
 layout(rgba16f, binding = 2) uniform readonly image2D img_current_pos; // Position in the current frame
 layout(rgba16f, binding = 3) uniform writeonly image2D img_simulated_pos; // Position in the new frame (simulated)
 
+uniform float hairSegmentLength;
+
 // Do not forget to change this if it is changed in main.
 // Casting a uniform to const did not seem to work..
 const int noOfHairSegments = 8;
 
-float hairSegmentLength = 0.05f;
-
+// Function declarations
 void fullfillEdgeConstraint(inout vec4 p1, inout vec4 p2, int index);
+void fullfillLocalConstraint(inout vec4 p0, inout vec4 p1, in vec4 p1_rest, in int index);
 
 void main() {
 
@@ -58,18 +60,34 @@ void main() {
         constraint_strength = constraint_strength - (max_c_strength/noOfHairSegments);
     }
     /*************** Local constraints *****************/
-    // TODO: Add local constraints
-
-    /************ Edge/Length constraints **************/
     int maxIter = 2;
     int iter = 0;
+    while(iter < maxIter){
+        for(int i = 1; i < noOfHairSegments; i++){
+            fullfillLocalConstraint(new_pos[i-1], new_pos[i], rest_pos[i], i);
+        }
+        iter++;
+    }
+
+    /************ Edge/Length constraints **************/
+    maxIter = 2;
+    iter = 0;
     while(iter < maxIter){
         for(int i = 0; i < noOfHairSegments-1; i++){
             fullfillEdgeConstraint(new_pos[i], new_pos[i+1], i);
         }
         iter++;
     }
+
+    /******************* Apply wind ********************/
+    // TODO: Apply wind
+
+    /*************** Collision handling ****************/
+    // TODO: Add collision handling with the object
+
+
     /***************************************************/
+    /***************** Update step *********************/
     /***************************************************/
 
     // Finally, set the new position in the correct texel in the output texture
@@ -92,4 +110,20 @@ void fullfillEdgeConstraint(inout vec4 p1, inout vec4 p2, int index){
 
     p1 = p1 + dP1;
     p2 = p2 + dP2;
+}
+
+void fullfillLocalConstraint(inout vec4 p0, inout vec4 p1, in vec4 p1_rest, in int index){
+    vec4 d = p1_rest - p1;
+    float local_constraint_strength = 0.005f;
+    vec4 dP0, dP1;
+        if(index == 0){
+            dP0 = vec4(0.f);
+            dP1 = local_constraint_strength * d;
+        } else {
+            dP0 = -0.5 * local_constraint_strength * d;
+            dP1 =  0.5 * local_constraint_strength * d;
+        }
+
+    p0 = p0 + dP0;
+    p1 = p1 + dP1;
 }

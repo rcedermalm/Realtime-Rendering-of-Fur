@@ -50,7 +50,7 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 // Hair/fur variables
-int noofHairSegments = 8;
+int noofHairSegments = 8; // IF YOU CHANGE THIS, DO NOT FORGET TO CHANGE IN furSimulation.compute AND furShader.gs TOO!!
 float hairSegmentLength = 0.05f;
 const int nrOfDataVariablesPerMasterHair = 1; // position
 int noOfMasterHairs;
@@ -205,6 +205,10 @@ int main()
     GLint lightPosLocFur = glGetUniformLocation(furShader, "lightPos");
     GLint lightColorLocFur = glGetUniformLocation(furShader, "lightColor");
 
+    /** Fur simulation compute shader **/
+    furSimulationShader();
+    GLint hairSegmentLengthSimLoc = glGetUniformLocation(furSimulationShader, "hairSegmentLength");
+
 
     /****************************************************/
     /******************* RENDER LOOP ********************/
@@ -220,7 +224,8 @@ int main()
         glBindImageTexture(1, hairDataTextureID_last, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
         glBindImageTexture(2, hairDataTextureID_current, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
         glBindImageTexture(3, hairDataTextureID_simulated, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
-        glDispatchCompute(1, (GLuint)noOfMasterHairs, 1);
+        glUniform1f(hairSegmentLengthSimLoc, hairSegmentLength);
+        glDispatchCompute(1, noOfMasterHairs, 1); // Call for each master hair strand
 
 
         /****************************************************/
