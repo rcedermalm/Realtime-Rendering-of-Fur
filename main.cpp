@@ -50,10 +50,14 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 // Hair/fur variables
-int noofHairSegments = 8; // IF YOU CHANGE THIS, DO NOT FORGET TO CHANGE IN furSimulation.compute AND furShader.gs TOO!!
+int noofHairSegments = 16; // IF YOU CHANGE THIS, DO NOT FORGET TO CHANGE IN furSimulation.compute AND furShader.gs TOO!!
 float hairSegmentLength = 0.05f;
 const int nrOfDataVariablesPerMasterHair = 1; // position
 int noOfMasterHairs;
+
+float windAmount = 0.f;
+float windMagnitude = 1.f;
+float windDirection[4] = {1.f, 0.f, 0.f, 0.f};
 
 
 /*******************************************
@@ -209,6 +213,8 @@ int main()
     furSimulationShader();
     GLint hairSegmentLengthSimLoc = glGetUniformLocation(furSimulationShader, "hairSegmentLength");
 
+    GLint windMagnitudeSimLoc = glGetUniformLocation(furSimulationShader, "windMagnitude");
+    GLint windDirectionSimLoc = glGetUniformLocation(furSimulationShader, "windDirection");
 
     /****************************************************/
     /******************* RENDER LOOP ********************/
@@ -217,20 +223,7 @@ int main()
     while (!glfwWindowShouldClose(window))
     {
         /****************************************************/
-        /**************** SIMULATION OF FUR *****************/
-
-        furSimulationShader();
-        glBindImageTexture(0, hairDataTextureID_rest, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-        glBindImageTexture(1, hairDataTextureID_last, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-        glBindImageTexture(2, hairDataTextureID_current, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
-        glBindImageTexture(3, hairDataTextureID_simulated, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
-        glUniform1f(hairSegmentLengthSimLoc, hairSegmentLength);
-        glDispatchCompute(1, noOfMasterHairs, 1); // Call for each master hair strand
-
-
-        /****************************************************/
         /************* SETTINGS AND TRANSFORMS **************/
-
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
@@ -245,6 +238,20 @@ int main()
         // Create camera transformation
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH/(float)HEIGHT, 0.1f, 100.0f);
+
+        /****************************************************/
+        /**************** SIMULATION OF FUR *****************/
+        windMagnitude *= (pow(sin(currentFrame * 0.05), 2) + 0.5);
+
+        furSimulationShader();
+        glBindImageTexture(0, hairDataTextureID_rest, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glBindImageTexture(1, hairDataTextureID_last, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glBindImageTexture(2, hairDataTextureID_current, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
+        glBindImageTexture(3, hairDataTextureID_simulated, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+        glUniform1f(hairSegmentLengthSimLoc, hairSegmentLength);
+        glUniform1f(windMagnitudeSimLoc, windMagnitude + windAmount);
+        glUniform4fv(windDirectionSimLoc, 1, windDirection);
+        glDispatchCompute(1, noOfMasterHairs, 1); // Call for each master hair strand
 
         /****************************************************/
         /******************* RENDER STUFF *******************/
@@ -329,6 +336,10 @@ void processInput(GLFWwindow *window) {
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
+        windAmount += 10.f;
+    if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
+        windAmount -= 10.f;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

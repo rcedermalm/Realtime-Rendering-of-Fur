@@ -8,9 +8,12 @@ layout(rgba16f, binding = 3) uniform writeonly image2D img_simulated_pos; // Pos
 
 uniform float hairSegmentLength;
 
+uniform float windMagnitude;
+uniform vec4 windDirection;
+
 // Do not forget to change this if it is changed in main.
 // Casting a uniform to const did not seem to work..
-const int noOfHairSegments = 8;
+const int noOfHairSegments = 16;
 
 // Function declarations
 void fullfillEdgeConstraint(inout vec4 p1, inout vec4 p2, int index);
@@ -53,7 +56,7 @@ void main() {
     }
 
     /*************** Global constraints ****************/
-    float max_c_strength = 0.1f;
+    float max_c_strength = 0.05f;
     float constraint_strength = max_c_strength;
     for(int i = 0; i < noOfHairSegments; i++){
         new_pos[i] = new_pos[i] + constraint_strength * (rest_pos[i] - new_pos[i]);
@@ -80,11 +83,20 @@ void main() {
     }
 
     /******************* Apply wind ********************/
-    // TODO: Apply wind
+    for(int i = 1; i < noOfHairSegments; i++){
+        float a = (texCoords[i].x) % 20 / 20;
 
-    /*************** Collision handling ****************/
-    // TODO: Add collision handling with the object
+        vec4 w1 = windDirection + vec4(0, 1, 1, 0);
+        vec4 w2 = windDirection + vec4(0, -1, 1, 0);
+        vec4 w3 = windDirection + vec4(0, 1, 1, 0);
+        vec4 w4 = windDirection + vec4(0, 1, -1, 0);
+        vec4 wind = a * w1 + (1 - a) * w2 + a * w3 + (1 - a) * w4;
 
+        vec4 v = new_pos[i-1] - new_pos[i];
+        vec4 f = 1.0f * vec4(cross(cross(vec3(v), vec3(wind)), vec3(v)), 0.0f);
+        vec4 dP = pow(dt, 2) * f;
+        new_pos[i] = new_pos[i] + windMagnitude * dP;
+    }
 
     /***************************************************/
     /***************** Update step *********************/
