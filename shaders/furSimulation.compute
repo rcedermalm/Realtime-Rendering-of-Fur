@@ -6,6 +6,8 @@ layout(rgba16f, binding = 1) uniform readonly image2D img_last_pos; // Position 
 layout(rgba16f, binding = 2) uniform readonly image2D img_current_pos; // Position in the current frame
 layout(rgba16f, binding = 3) uniform writeonly image2D img_simulated_pos; // Position in the new frame (simulated)
 
+uniform mat4 model;
+
 uniform float hairSegmentLength;
 
 uniform float windMagnitude;
@@ -13,7 +15,7 @@ uniform vec4 windDirection;
 
 // Do not forget to change this if it is changed in main.
 // Casting a uniform to const did not seem to work..
-const int noOfHairSegments = 16;
+const int noOfHairSegments = 12;
 
 // Function declarations
 void fullfillEdgeConstraint(inout vec4 p1, inout vec4 p2, int index);
@@ -43,6 +45,7 @@ void main() {
         curr_vel[i] = curr_pos[i] - last_pos[i];
     }
 
+
     /***************************************************/
     /*************** Simulation step *******************/
     /***************************************************/
@@ -59,7 +62,7 @@ void main() {
     float max_c_strength = 0.05f;
     float constraint_strength = max_c_strength;
     for(int i = 0; i < noOfHairSegments; i++){
-        new_pos[i] = new_pos[i] + constraint_strength * (rest_pos[i] - new_pos[i]);
+        new_pos[i] = new_pos[i] + constraint_strength * (model * rest_pos[i] - new_pos[i]);
         constraint_strength = constraint_strength - (max_c_strength/noOfHairSegments);
     }
     /*************** Local constraints *****************/

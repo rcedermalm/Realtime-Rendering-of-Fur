@@ -1,8 +1,9 @@
 #version 150
 
 layout(triangles) in;
-layout(line_strip, max_vertices = 51) out; // Unfortunately this needs to be hardcoded.. (3*(noOfHairSegments+1))Do not forget to change this
+layout(line_strip, max_vertices = 39) out; // Unfortunately this needs to be hardcoded.. (3*(noOfHairSegments+1))Do not forget to change this
                                            // if you change noOfHairSegments in main.cpp
+uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
@@ -42,7 +43,7 @@ void generateHairStrands(int index){
     vec3 firstHairSegmentPos = getInterpolatedPosition(index, 0);
 
     // Create first hairvertex (the one attached to the object)
-    gl_Position = projection * view * gl_in[index].gl_Position;
+    gl_Position = projection * view * model * gl_in[index].gl_Position;
     gTexCoord = teTexCoord[index];
     gPosition = lastPos;
     gTangent = normalize(firstHairSegmentPos - lastPos);

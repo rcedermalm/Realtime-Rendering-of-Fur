@@ -50,7 +50,7 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 // Hair/fur variables
-int noofHairSegments = 16; // IF YOU CHANGE THIS, DO NOT FORGET TO CHANGE IN furSimulation.compute AND furShader.gs TOO!!
+int noofHairSegments = 12; // IF YOU CHANGE THIS, DO NOT FORGET TO CHANGE IN furSimulation.compute AND furShader.gs TOO!!
 float hairSegmentLength = 0.05f;
 const int nrOfDataVariablesPerMasterHair = 1; // position
 int noOfMasterHairs;
@@ -61,6 +61,8 @@ float maxWindAmount = 1000.f;
 float windMagnitude = 1.f;
 float windDirection[4] = {1.f, 0.f, 0.f, 0.f};
 
+glm::mat4 model;
+float xTranslate = 0.f;
 
 /*******************************************
  **************    MAIN     ****************
@@ -181,6 +183,7 @@ int main()
 
     /** Plain shader **/
     plainShader();
+    GLint modelLocPlain = glGetUniformLocation(plainShader, "model");
     GLint viewLocPlain = glGetUniformLocation(plainShader, "view");
     GLint projLocPlain = glGetUniformLocation(plainShader, "projection");
 
@@ -192,6 +195,7 @@ int main()
 
     /** Fur shader **/
     furShader();
+    GLint modelLocFur = glGetUniformLocation(furShader, "model");
     GLint viewLocFur = glGetUniformLocation(furShader, "view");
     GLint projLocFur = glGetUniformLocation(furShader, "projection");
 
@@ -213,6 +217,8 @@ int main()
 
     /** Fur simulation compute shader **/
     furSimulationShader();
+
+    GLint modelLocFurSim = glGetUniformLocation(furSimulationShader, "model");
     GLint hairSegmentLengthSimLoc = glGetUniformLocation(furSimulationShader, "hairSegmentLength");
 
     GLint windMagnitudeSimLoc = glGetUniformLocation(furSimulationShader, "windMagnitude");
@@ -250,6 +256,7 @@ int main()
         glBindImageTexture(1, hairDataTextureID_last, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
         glBindImageTexture(2, hairDataTextureID_current, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA16F);
         glBindImageTexture(3, hairDataTextureID_simulated, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+        glUniformMatrix4fv(modelLocFurSim, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1f(hairSegmentLengthSimLoc, hairSegmentLength);
         glUniform1f(windMagnitudeSimLoc, windMagnitude + windAmount);
         glUniform4fv(windDirectionSimLoc, 1, windDirection);
@@ -261,6 +268,7 @@ int main()
         /***************** Render it plain ******************/
 
         plainShader();
+        glUniformMatrix4fv(modelLocPlain, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -279,6 +287,7 @@ int main()
         // Render
         furShader();
 
+        glUniformMatrix4fv(modelLocFur, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(viewLocFur, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLocFur, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -338,6 +347,14 @@ void processInput(GLFWwindow *window) {
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+        model = glm::translate(model, glm::vec3(0.1f, 0.f, 0.f));
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+        model = glm::translate(model, glm::vec3(-0.1f, 0.f, 0.f));
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+        model = glm::translate(model, glm::vec3(0.f, -0.1f, 0.f));
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+        model = glm::translate(model, glm::vec3(0.f, 0.1f, 0.f));
     if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS)
         if(windAmount < maxWindAmount)
             windAmount += 10.f;
@@ -387,17 +404,18 @@ GLfloat* createMasterHairs(const MeshObject& object){
     int masterHairIndex = 0;
     int stride = 8; // 8 because the vertexArray consists of (vertex (3), normal (3), tex (2))
     for(int i = 0; i < noOfMasterHairs*stride; i = i+stride){
-        glm::vec3 rootPos = glm::vec3(vertexArray[i], vertexArray[i+1], vertexArray[i+2]);
-        glm::vec3 rootNormal = glm::vec3(vertexArray[i+3], vertexArray[i+4], vertexArray[i+5]);
+        glm::vec4 rootPos = glm::vec4(vertexArray[i], vertexArray[i+1], vertexArray[i+2], 1.f);
+        rootPos = model * rootPos;
+        glm::vec4 rootNormal = glm::vec4(vertexArray[i+3], vertexArray[i+4], vertexArray[i+5], 0.f);
 
         // Add hairVertices
         for(int hairSegment = 1; hairSegment <= noofHairSegments; hairSegment++){
             // Add position
-            glm::vec3 newPos = rootPos + hairSegment*hairSegmentLength*rootNormal;
+            glm::vec4 newPos = rootPos + hairSegment*hairSegmentLength*rootNormal;
             hairData[masterHairIndex++] = newPos.x;
             hairData[masterHairIndex++] = newPos.y;
             hairData[masterHairIndex++] = newPos.z;
-            hairData[masterHairIndex++] = 1.0f;
+            hairData[masterHairIndex++] = newPos.w;
         }
     }
     return hairData;
