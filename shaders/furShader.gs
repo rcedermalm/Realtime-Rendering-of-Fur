@@ -52,7 +52,7 @@ void generateHairStrands(int index){
     vec3 randomness = vec3(texture(randomDataTexture, teTexCoord[index]));
 
     // Create the hairvertices
-    for(int hairIndex = 0; hairIndex < noOfHairSegments; hairIndex++){
+    for(int hairIndex = 1; hairIndex < noOfHairSegments; hairIndex++){
         vec3 hairPos = getInterpolatedPosition(index, hairIndex);
         hairPos = hairPos + 0.2f * randomness;
 

@@ -62,7 +62,6 @@ float windMagnitude = 1.f;
 float windDirection[4] = {1.f, 0.f, 0.f, 0.f};
 
 glm::mat4 model;
-float xTranslate = 0.f;
 
 /*******************************************
  **************    MAIN     ****************
@@ -130,14 +129,14 @@ int main()
     //MeshObject triangle;
     //triangle.createTriangle();
 
-    MeshObject box;
-    box.createBox(2.0, 2.0, 2.0);
+    //MeshObject box;
+    //box.createBox(2.0, 2.0, 2.0);
 
     MeshObject sphere;
     sphere.createSphere(2.0, 40);
 
-    MeshObject bunny;
-    bunny.readOBJ("../objects/bunny1752.obj");
+    //MeshObject bunny;
+    //bunny.readOBJ("../objects/bunny1752.obj");
 
     Texture mainTexture = Texture("../textures/lightbrown.tga");
 
@@ -394,6 +393,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     camera.ProcessMouseScroll(yoffset);
 }
 
+
+
 GLfloat* createMasterHairs(const MeshObject& object){
     GLfloat* vertexArray = object.getVertexArray();
     noOfMasterHairs = object.getNoOfVertices();
@@ -408,8 +409,13 @@ GLfloat* createMasterHairs(const MeshObject& object){
         rootPos = model * rootPos;
         glm::vec4 rootNormal = glm::vec4(vertexArray[i+3], vertexArray[i+4], vertexArray[i+5], 0.f);
 
+        hairData[masterHairIndex++] = rootPos.x;
+        hairData[masterHairIndex++] = rootPos.y;
+        hairData[masterHairIndex++] = rootPos.z;
+        hairData[masterHairIndex++] = rootPos.w;
+
         // Add hairVertices
-        for(int hairSegment = 1; hairSegment <= noofHairSegments; hairSegment++){
+        for(int hairSegment = 0; hairSegment < noofHairSegments - 1; hairSegment++){
             // Add position
             glm::vec4 newPos = rootPos + hairSegment*hairSegmentLength*rootNormal;
             hairData[masterHairIndex++] = newPos.x;

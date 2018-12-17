@@ -59,7 +59,7 @@ void main() {
     }
 
     /*************** Global constraints ****************/
-    float max_c_strength = 0.05f;
+    float max_c_strength = 0.08f;
     float constraint_strength = max_c_strength;
     for(int i = 0; i < noOfHairSegments; i++){
         new_pos[i] = new_pos[i] + constraint_strength * (model * rest_pos[i] - new_pos[i]);
