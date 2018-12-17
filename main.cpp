@@ -56,6 +56,8 @@ const int nrOfDataVariablesPerMasterHair = 1; // position
 int noOfMasterHairs;
 
 float windAmount = 0.f;
+float minWindAmount = 0.f;
+float maxWindAmount = 1000.f;
 float windMagnitude = 1.f;
 float windDirection[4] = {1.f, 0.f, 0.f, 0.f};
 
@@ -336,10 +338,12 @@ void processInput(GLFWwindow *window) {
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
-        windAmount += 10.f;
-    if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
-        windAmount -= 10.f;
+    if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS)
+        if(windAmount < maxWindAmount)
+            windAmount += 10.f;
+    if (glfwGetKey(window, GLFW_KEY_COMMA) == GLFW_PRESS)
+        if(windAmount > minWindAmount)
+            windAmount -= 10.f;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
