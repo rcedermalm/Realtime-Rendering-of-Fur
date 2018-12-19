@@ -37,7 +37,7 @@ void main() {
     // Initialize positions and velocities for each hair vertex.
     for(int i = 0; i < noOfHairSegments; i++){
         texCoords[i] = ivec2(gl_GlobalInvocationID.xy) + ivec2(i, 0);
-        rest_pos[i] = imageLoad(img_rest_pos, texCoords[i]);
+        rest_pos[i] = model * imageLoad(img_rest_pos, texCoords[i]);
         last_pos[i] = imageLoad(img_last_pos, texCoords[i]);
         curr_pos[i] = imageLoad(img_current_pos, texCoords[i]);
 
@@ -62,7 +62,7 @@ void main() {
     float max_c_strength = 0.08f;
     float constraint_strength = max_c_strength;
     for(int i = 0; i < noOfHairSegments; i++){
-        new_pos[i] = new_pos[i] + constraint_strength * (model * rest_pos[i] - new_pos[i]);
+        new_pos[i] = new_pos[i] + constraint_strength * (rest_pos[i] - new_pos[i]);
         constraint_strength = constraint_strength - (max_c_strength/noOfHairSegments);
     }
     /*************** Local constraints *****************/
@@ -89,10 +89,14 @@ void main() {
     for(int i = 1; i < noOfHairSegments; i++){
         float a = (texCoords[i].x) % 20 / 20;
 
-        vec4 w1 = windDirection + vec4(0, 1, 1, 0);
-        vec4 w2 = windDirection + vec4(0, -1, 1, 0);
-        vec4 w3 = windDirection + vec4(0, 1, 1, 0);
-        vec4 w4 = windDirection + vec4(0, 1, -1, 0);
+        vec4 c1 = normalize(vec4(0.f, 1.f, 0.f, 0.f)); // up vector
+        vec4 c2 = normalize(vec4(cross(vec3(c1), vec3(windDirection)), 0.f));
+
+        vec4 w1 = windDirection + 0.2 * c1 + 0.2 * c2;
+        vec4 w2 = windDirection + 0.2 * c1 - 0.2 * c2;
+        vec4 w3 = windDirection - 0.2 * c1 + 0.2 * c2;
+        vec4 w4 = windDirection - 0.2 * c1 - 0.2 * c2;
+
         vec4 wind = a * w1 + (1 - a) * w2 + a * w3 + (1 - a) * w4;
 
         vec4 v = new_pos[i-1] - new_pos[i];

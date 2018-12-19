@@ -11,6 +11,7 @@
 // GLM
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
+#include <gtc/constants.hpp>
 #include <gtc/type_ptr.hpp>
 
 // Classes
@@ -33,17 +34,18 @@ GLuint generateTextureFromHairData(GLfloat* hairData);
 GLuint createRandomness();
 
 // Window dimensions
-const GLuint WIDTH = 1000, HEIGHT = 600;
+const GLuint WIDTH = 1920, HEIGHT = 1080;
 
 // Camera variables
-Camera camera(glm::vec3(0.0f, 0.0f, 10.0f));
+//Camera camera(glm::vec3(0.0f, 0.0f, 10.0f));
+Camera camera(glm::vec3(10.0f, 0.0f, 0.0f), glm::vec3(0.f, 1.f, 0.f), 180, 0);
 float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
 // Light variables
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+bool movingLight = false;
 
 // Time variables
 float deltaTime = 0.0f;	// time between current frame and last frame
@@ -59,7 +61,7 @@ float windAmount = 0.f;
 float minWindAmount = 0.f;
 float maxWindAmount = 1000.f;
 float windMagnitude = 1.f;
-float windDirection[4] = {1.f, 0.f, 0.f, 0.f};
+glm::vec4 windDirection = {0.f, -1.f, 1.f, 0.f};
 
 glm::mat4 model;
 
@@ -136,7 +138,7 @@ int main()
     sphere.createSphere(2.0, 40);
 
     //MeshObject bunny;
-    //bunny.readOBJ("../objects/bunny1752.obj");
+    //bunny.readOBJ("../objects/bunny2452.obj");
 
     Texture mainTexture = Texture("../textures/lightbrown.tga");
 
@@ -153,6 +155,13 @@ int main()
 
     // To be able to add randomness to each hair strand
     GLuint randomDataTextureID = createRandomness();
+
+    /******************* Wind *********************/
+    MeshObject windSphere;
+    windSphere.createSphere(0.5f, 10);
+
+    glm::vec4 windSpherePosition = {0.f, 0.f, 0.f, 1.f};
+    Texture windTexture = Texture("../textures/sky.tga");
 
     /***************** Shaders ********************/
 
@@ -227,6 +236,7 @@ int main()
     /******************* RENDER LOOP ********************/
     /****************************************************/
 
+    float rotationAngle = 0.f;
     while (!glfwWindowShouldClose(window))
     {
         /****************************************************/
@@ -246,6 +256,19 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH/(float)HEIGHT, 0.1f, 100.0f);
 
+        /********** Rotating orb setup (wind, light)**********/
+        glm::mat4 rotatingModel;
+        if(windAmount > 0.1f || movingLight)
+            rotationAngle += 0.5f;
+        rotatingModel = glm::rotate(rotatingModel, glm::radians(rotationAngle), glm::vec3(0.f, 1.f, 0.f));
+        rotatingModel = glm::translate(rotatingModel, glm::vec3(0.f, 0.f, 5.f));
+
+        if(windAmount > 0.1f)
+            windDirection = glm::normalize(windSpherePosition - rotatingModel * windSpherePosition);
+
+        glm::vec3 lightPos(0.f, 0.f, 0.f);
+        lightPos = glm::vec3(rotatingModel * glm::vec4(lightPos, 1.0f));
+
         /****************************************************/
         /**************** SIMULATION OF FUR *****************/
         windMagnitude *= (pow(sin(currentFrame * 0.05), 2) + 0.5);
@@ -258,12 +281,28 @@ int main()
         glUniformMatrix4fv(modelLocFurSim, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1f(hairSegmentLengthSimLoc, hairSegmentLength);
         glUniform1f(windMagnitudeSimLoc, windMagnitude + windAmount);
-        glUniform4fv(windDirectionSimLoc, 1, windDirection);
+        glUniform4f(windDirectionSimLoc, windDirection.x, windDirection.y, windDirection.z, windDirection.w);
         glDispatchCompute(1, noOfMasterHairs, 1); // Call for each master hair strand
 
         /****************************************************/
         /******************* RENDER STUFF *******************/
 
+        /**************** Render wind sphere ****************/
+
+        if(windAmount > 0.1f || movingLight) {
+            plainShader();
+            glUniformMatrix4fv(modelLocPlain, 1, GL_FALSE, glm::value_ptr(rotatingModel));
+            glUniformMatrix4fv(viewLocPlain, 1, GL_FALSE, glm::value_ptr(view));
+            glUniformMatrix4fv(projLocPlain, 1, GL_FALSE, glm::value_ptr(projection));
+
+            glUniform3f(lightPosLocPlain, lightPos.x, lightPos.y, lightPos.z);
+            glUniform3f(lightColorLocPlain, lightColor.x, lightColor.y, lightColor.z);
+
+            glActiveTexture(GL_TEXTURE0 + 0); // Texture unit 0
+            glBindTexture(GL_TEXTURE_2D, windTexture.textureID);
+
+            windSphere.render(false);
+        }
         /***************** Render it plain ******************/
 
         plainShader();
@@ -347,13 +386,17 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-        model = glm::translate(model, glm::vec3(0.1f, 0.f, 0.f));
+        model = glm::translate(model, glm::vec3(0.05f, 0.f, 0.f));
     if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-        model = glm::translate(model, glm::vec3(-0.1f, 0.f, 0.f));
+        model = glm::translate(model, glm::vec3(-0.05f, 0.f, 0.f));
     if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
-        model = glm::translate(model, glm::vec3(0.f, -0.1f, 0.f));
+        model = glm::translate(model, glm::vec3(0.f, -0.05f, 0.f));
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-        model = glm::translate(model, glm::vec3(0.f, 0.1f, 0.f));
+        model = glm::translate(model, glm::vec3(0.f, 0.05f, 0.f));
+    if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
+        movingLight = true;
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
+        movingLight = false;
     if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS)
         if(windAmount < maxWindAmount)
             windAmount += 10.f;
@@ -385,7 +428,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     lastX = xpos;
     lastY = ypos;
 
-    camera.ProcessMouseMovement(xoffset, yoffset);
+    //camera.ProcessMouseMovement(xoffset, yoffset);
+    model = glm::translate(model, glm::vec3(0.f, yoffset*0.01f, -xoffset*0.01f));
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
